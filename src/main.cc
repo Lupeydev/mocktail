@@ -1064,6 +1064,26 @@ int main(int argc, char* argv[]) {
                 << " updated=" << (desktop_policy.updated ? 1 : 0)
                 << " runtime_override=1\n";
     }
+    if (vr_active) {
+      std::string vr_client_settings;
+      std::string vr_fast_flags;
+      if (!mocktail::runtime::MergeVrAppPolicyClientSettingsOverrides(
+              vr_active,
+              environment.GetOr("MOCKTAIL_CLIENT_SETTINGS_OVERRIDES_JSON", "{}"),
+              environment.GetOr("MOCKTAIL_FAST_FLAGS_JSON", "{}"),
+              &vr_client_settings, &vr_fast_flags, &command_line_error)) {
+        std::cerr << "[FATAL] Cannot apply VR app-policy: "
+                  << command_line_error << '\n';
+        return EXIT_FAILURE;
+      }
+      if (setenv("MOCKTAIL_CLIENT_SETTINGS_OVERRIDES_JSON",
+                 vr_client_settings.c_str(), 1) != 0 ||
+          setenv("MOCKTAIL_FAST_FLAGS_JSON", vr_fast_flags.c_str(), 1) != 0) {
+        std::cerr << "[FATAL] Cannot export VR app-policy\n";
+        return EXIT_FAILURE;
+      }
+      std::cout << "  [vr] app-policy idle render throttling disabled\n";
+    }
     auto android_window_context =
         std::make_shared<AndroidWindowBridgeContext>();
     jnivm::AndroidWindowCallbacks android_window_callbacks;
